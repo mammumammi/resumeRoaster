@@ -1,25 +1,30 @@
-import * as v2 from 'firebase-functions';
+import { logger } from 'firebase-functions/v2';  // Changed
 import * as admin from 'firebase-admin';
 import {GoogleGenAI} from "@google/genai";
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 
 admin.initializeApp();
 
-
-v2.setGlobalOptions({region: "asia-south1",maxInstances:10,timeoutSeconds:60,memory:'1GiB'});
-
 const ai = new GoogleGenAI({
-    apiKey:process.env.GEMINI_API_KEY
+    apiKey: process.env.GEMINI_API_KEY
 })
 
-export const roastResume = onDocumentCreated({document: "resume_roasts/{docId}",region: 'asia-south1'} ,async (event) => {
+export const roastResume = onDocumentCreated({
+    document: "resume_roasts/{docId}",
+    region: 'asia-south1',
+    memory: '1GiB',
+    timeoutSeconds: 540  // Max timeout for v2
+}, async (event) => {
     const data = event.data?.data();
     const docId = event.params.docId;
 
-    if (!data || data.status !== "processing") return;
+    if (!data || data.status !== "processing") {
+        logger.info(`Skipping - status is ${data?.status}`);
+        return;
+    }
 
     try {
-        v2.logger.info(`Roasting Resume: ${docId}`);
+        logger.info(`Roasting Resume: ${docId}`);
         const response = await ai.models.generateContent({
             model:"gemini-2.5-flash",
             contents: [
@@ -41,11 +46,10 @@ export const roastResume = onDocumentCreated({document: "resume_roasts/{docId}",
             processedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        v2.logger.info(`FINISHED ROASTING: ${docId}`);
+        logger.info(`FINISHED ROASTING: ${docId}`);
     }
     catch(error){
-        v2.logger.error("Roast failed:",error);
-        await event.data?.ref.update({status: "Error",error:"Something happened with gemini"})
+        logger.error("Roast failed:",error);
+        await event.data?.ref.update({status: "error",error:"Something happened with gemini"})
     }
 })
-

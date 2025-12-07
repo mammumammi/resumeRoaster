@@ -57,8 +57,9 @@ export const handleFileUpload = async (formData:FormData) => {
             status:'processing',
             createdAt:new Date()
         });
-
+        console.log("Created docid:",docRef.id);
         return {success: true,docId:docRef.id}
+
     }
     catch(error){
         console.log("Error occured:",error);
