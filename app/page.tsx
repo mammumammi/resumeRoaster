@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react'
-import { handleFileUpload } from './api/upload-pdf/route';
+import { handleFileUpload } from './utils/fileupload';
 import { error } from 'console';
 import {doc, onSnapshot,getFirestore} from 'firebase/firestore';
 import { app } from './utils/firebaseConfig';
@@ -72,12 +72,12 @@ const page = () => {
           </form>
         </div>
       </div>
-      <div>{loaded && (<div>{genRes.map((item,id) => (
+      <div>{!loading && loaded ? (<div>{genRes.map((item,id) => (
         <div key={id} className='flex flex-col space-y-[20px]'>
           <div >{item}</div>
 
         </div>
-      ))}</div>)}</div>
+      ))}</div>) : <p>Please wait for your roasts(may take upto 3 minutes)</p>}</div>
     </div>
   )
 }
